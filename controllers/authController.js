@@ -2,7 +2,7 @@ const User = require("../models/User");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const sendOTP = require("../utils/mailer");
-
+const cloudinary = require("../config/cloudinary");
 require("dotenv").config();
 exports.register = async (req, res) => {
   try {
@@ -181,6 +181,147 @@ exports.updateAvatar = async (req, res) => {
     res.json({ message: "Cập nhật avatar thành công!", user: updatedUser });
   } catch (error) {
     console.error("Lỗi khi cập nhật avatar:", error);
+    res.status(500).json({ message: "Lỗi server!", error: error.message });
+  }
+};
+exports.sendChangeEmailOTP = async (req, res) => {
+  try {
+    const { newEmail } = req.body;
+    const userId = req.user.userId;
+
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({ message: "Không tìm thấy người dùng!" });
+    }
+
+    const existingUser = await User.findOne({ email: newEmail });
+    if (existingUser) {
+      return res
+        .status(400)
+        .json({ message: "Email đã được sử dụng bởi tài khoản khác!" });
+    }
+
+    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+    user.otp = {
+      code: otp,
+      type: "email",
+      expires: new Date(Date.now() + 10 * 60 * 1000), // OTP hết hạn sau 10 phút
+    };
+    await user.save();
+
+    await sendOTP(newEmail, otp);
+
+    res.json({ message: "OTP đã được gửi đến email mới!" });
+  } catch (error) {
+    console.error("Lỗi khi gửi OTP thay đổi email:", error);
+    res.status(500).json({ message: "Lỗi server!", error: error.message });
+  }
+};
+
+exports.verifyAndChangeEmail = async (req, res) => {
+  try {
+    const { newEmail, otp } = req.body;
+    const userId = req.user.userId;
+
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({ message: "Không tìm thấy người dùng!" });
+    }
+
+    if (
+      !user.otp ||
+      user.otp.code !== otp ||
+      user.otp.type !== "email" ||
+      user.otp.expires < new Date()
+    ) {
+      return res
+        .status(400)
+        .json({ message: "OTP không hợp lệ hoặc đã hết hạn!" });
+    }
+
+    user.email = newEmail;
+    user.isEmailVerified = true;
+    user.otp = undefined;
+    await user.save();
+
+    res.json({
+      message: "Email đã được thay đổi thành công!",
+      email: newEmail,
+    });
+  } catch (error) {
+    console.error("Lỗi khi xác thực và thay đổi email:", error);
+    res.status(500).json({ message: "Lỗi server!", error: error.message });
+  }
+};
+
+exports.sendChangePhoneOTP = async (req, res) => {
+  try {
+    const { newPhone } = req.body;
+    const userId = req.user.userId;
+
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({ message: "Không tìm thấy người dùng!" });
+    }
+
+    const existingUser = await User.findOne({ phone: newPhone });
+    if (existingUser) {
+      return res
+        .status(400)
+        .json({ message: "Số điện thoại đã được sử dụng bởi tài khoản khác!" });
+    }
+
+    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+    user.otp = {
+      code: otp,
+      type: "phone",
+      expires: new Date(Date.now() + 10 * 60 * 1000), // OTP hết hạn sau 10 phút
+    };
+    await user.save();
+
+    // Gửi OTP qua SMS (cần triển khai)
+    // Ví dụ: await sendSMS(newPhone, otp);
+    console.log(`Gửi OTP ${otp} đến số điện thoại ${newPhone}`);
+
+    res.json({ message: "OTP đã được gửi đến số điện thoại mới!" });
+  } catch (error) {
+    console.error("Lỗi khi gửi OTP thay đổi số điện thoại:", error);
+    res.status(500).json({ message: "Lỗi server!", error: error.message });
+  }
+};
+
+exports.verifyAndChangePhone = async (req, res) => {
+  try {
+    const { newPhone, otp } = req.body;
+    const userId = req.user.userId;
+
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({ message: "Không tìm thấy người dùng!" });
+    }
+
+    if (
+      !user.otp ||
+      user.otp.code !== otp ||
+      user.otp.type !== "phone" ||
+      user.otp.expires < new Date()
+    ) {
+      return res
+        .status(400)
+        .json({ message: "OTP không hợp lệ hoặc đã hết hạn!" });
+    }
+
+    user.phone = newPhone;
+    user.isPhoneVerified = true;
+    user.otp = undefined;
+    await user.save();
+
+    res.json({
+      message: "Số điện thoại đã được thay đổi thành công!",
+      phone: newPhone,
+    });
+  } catch (error) {
+    console.error("Lỗi khi xác thực và thay đổi số điện thoại:", error);
     res.status(500).json({ message: "Lỗi server!", error: error.message });
   }
 };
