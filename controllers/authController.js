@@ -2,7 +2,7 @@ const User = require("../models/User");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const sendOTP = require("../utils/mailer");
-const cloudinary = require("../config/cloudinary");
+//const cloudinary = require("../config/cloudinary");
 require("dotenv").config();
 exports.register = async (req, res) => {
   try {
@@ -119,6 +119,30 @@ exports.verifyOTP = async (req, res) => {
     res.json({ message: "Xác thực OTP thành công!" });
   } catch (error) {
     res.status(500).json({ message: "Lỗi server!", error });
+  }
+};
+exports.resendOTP = async (req, res) => {
+  try {
+    const { email } = req.body;
+    const user = await User.findOne({ email });
+
+    if (!user) {
+      return res.status(400).json({ message: "Email không tồn tại!" });
+    }
+
+    // Tạo OTP mới
+    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+    user.otp = otp;
+    user.otpExpires = new Date(Date.now() + 5 * 60 * 1000); // Hết hạn sau 5 phút
+    await user.save();
+
+    // Gửi OTP qua email
+    await sendOTP(email, otp);
+
+    res.json({ message: "OTP mới đã được gửi đến email!" });
+  } catch (error) {
+    console.error("Lỗi khi gửi lại OTP:", error);
+    res.status(500).json({ message: "Lỗi server!", error: error.message });
   }
 };
 exports.getProfile = async (req, res) => {
@@ -322,6 +346,84 @@ exports.verifyAndChangePhone = async (req, res) => {
     });
   } catch (error) {
     console.error("Lỗi khi xác thực và thay đổi số điện thoại:", error);
+    res.status(500).json({ message: "Lỗi server!", error: error.message });
+  }
+};
+
+exports.getAllRoomCategoriesExamPle = async (req, res) => {
+  try {
+    // Dữ liệu mẫu cho danh mục phòng
+    const roomCategories = [
+      {
+        name: "Phòng Đơn",
+        address: "123 Đường ABC, Quận 1, TP.HCM",
+        price: 5000000,
+        rating: 4.5,
+        roomType: "Phòng Đơn",
+        icon: "room1-icon.png",
+        isActive: true,
+        order: 1,
+      },
+      {
+        name: "Phòng Đôi",
+        address: "456 Đường XYZ, Quận 2, TP.HCM",
+        price: 7000000,
+        rating: 4.7,
+        roomType: "Phòng Đôi",
+        icon: "room2-icon.png",
+        isActive: true,
+        order: 2,
+      },
+      {
+        name: "Căn Hộ",
+        address: "789 Đường LMN, Quận 3, TP.HCM",
+        price: 12000000,
+        rating: 4.8,
+        roomType: "Căn Hộ",
+        icon: "apartment-icon.png",
+        isActive: true,
+        order: 3,
+      },
+    ];
+
+    res.json(roomCategories);
+  } catch (error) {
+    console.error("❌ Lỗi khi lấy danh sách danh mục phòng:", error);
+    res.status(500).json({ message: "Lỗi server!", error: error.message });
+  }
+};
+
+exports.getTopRatedRoomsExamPle = async (req, res) => {
+  try {
+    // Dữ liệu mẫu cho các phòng được đánh giá cao nhất
+    const topRatedRooms = [
+      {
+        name: "Phòng Đôi",
+        address: "456 Đường XYZ, Quận 2, TP.HCM",
+        price: 7000000,
+        rating: 4.7,
+        roomType: "Phòng Đôi",
+        icon: "room2-icon.png",
+      },
+      {
+        name: "Căn Hộ",
+        address: "789 Đường LMN, Quận 3, TP.HCM",
+        price: 12000000,
+        rating: 4.8,
+        roomType: "Căn Hộ",
+        icon: "apartment-icon.png",
+      },
+    ];
+
+    if (!topRatedRooms || topRatedRooms.length === 0) {
+      return res
+        .status(404)
+        .json({ message: "Không có phòng nào được đánh giá!" });
+    }
+
+    res.json(topRatedRooms);
+  } catch (error) {
+    console.error("❌ Lỗi khi lấy phòng chạy nhất:", error);
     res.status(500).json({ message: "Lỗi server!", error: error.message });
   }
 };
