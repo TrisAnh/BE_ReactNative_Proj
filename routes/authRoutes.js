@@ -1,19 +1,21 @@
 const express = require("express");
+const { protect } = require("../middleware/auth");
+const upload = require("../config/multerConfig");
+
 const {
   register,
   login,
   sendOTP,
   verifyOTP,
   getProfile,
-  updateAvatar,
   updateProfile,
-  sendChangeEmailOTP,
-  verifyAndChangeEmail,
-  sendChangePhoneOTP,
-  verifyAndChangePhone,
   resendOTP,
   getAllRoomCategoriesExamPle,
   getTopRatedRoomsExamPle,
+  sendForgotPasswordOTP,
+  verifyForgotPasswordOTP,
+  resetPassword,
+  updateAvatar,
 } = require("../controllers/authController");
 const {
   getAllRoomCategories,
@@ -26,13 +28,13 @@ router.post("/login", login);
 router.post("/send-otp", sendOTP);
 router.post("/verify-otp", verifyOTP);
 router.post("/resend-otp", resendOTP);
-router.get("/getProfile", getProfile);
-router.put("/updateAvatar", updateAvatar);
-router.put("/updateProfile", updateProfile);
-router.post("/send-change-email-otp", sendChangeEmailOTP);
-router.post("/verify-change-email", verifyAndChangeEmail);
-router.post("/send-change-phone-otp", sendChangePhoneOTP);
-router.post("/verify-change-phone", verifyAndChangePhone);
+router.post("/send-otpForgot", sendForgotPasswordOTP);
+router.post("/verify-otpForgot", verifyForgotPasswordOTP);
+router.post("/reset-password", resetPassword);
+
+router.get("/me", protect, getProfile);
+router.put("/update-avatar", protect, upload.single("avatar"), updateAvatar);
+router.put("/updateProfile", protect, updateProfile);
 
 router.get("/getAllRoomCategories", getAllRoomCategories);
 router.get("/getTopRatedRooms", getTopRatedRooms);
