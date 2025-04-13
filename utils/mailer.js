@@ -19,5 +19,23 @@ const sendOTP = async (email, otp) => {
 
   await transporter.sendMail(mailOptions);
 };
+const sendConfirmationEmail = (email, viewingDetails) => {
+  const mailOptions = {
+    from: process.env.EMAIL_USER,
+    to: email,
+    subject: "Xác nhận lịch xem phòng",
+    text: `Chào ${viewingDetails.customerName},\n\nChúng tôi đã nhận được yêu cầu đặt lịch xem phòng của bạn vào ngày ${viewingDetails.viewDate}. Chúng tôi sẽ liên lạc lại với bạn để xác nhận lịch xem.\n\nTrân trọng!`,
+  };
 
-module.exports = sendOTP;
+  transporter.sendMail(mailOptions, (error, info) => {
+    if (error) {
+      console.log("Lỗi khi gửi email xác nhận:", error);
+    } else {
+      console.log("Email xác nhận đã được gửi:", info.response);
+    }
+  });
+};
+module.exports = {
+  sendOTP,
+  sendConfirmationEmail,
+};

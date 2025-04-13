@@ -22,10 +22,6 @@ const roomCategorySchema = new mongoose.Schema(
       min: 0,
       max: 5,
     },
-    icon: {
-      type: String,
-      default: "default-icon.png",
-    },
     isActive: {
       type: Boolean,
       default: true,
@@ -37,6 +33,10 @@ const roomCategorySchema = new mongoose.Schema(
     roomType: {
       type: String,
       enum: ["Phòng đơn", "Phòng đôi", "Căn hộ", "Chung cư", "Phòng ghép"],
+      required: true,
+    },
+    images: {
+      type: [String], // Mảng chứa đường dẫn ảnh
       required: true,
     },
   },
